@@ -1,0 +1,7 @@
+aiohttp
+disnake
+openai
+python-docx
+python-dotenv
+beautifulsoup4
+lxml

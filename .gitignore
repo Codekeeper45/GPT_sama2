@@ -1,0 +1,33 @@
+# Системные файлы
+.DS_Store
+Thumbs.db
+
+# Логи
+*.log
+
+# Кэш
+__pycache__/
+*.py[cod]
+*.class
+
+# Python venv
+venv/
+.env
+.env.*
+
+# контекст
+контекст.txt
+
+
+# База данных SQLite
+.db
+
+.config
+
+# Игнорировать файлы базы данных
+*.sqlite
+*.db
+*.db3
+
+# Игнорировать конфиг discloud
+discloud.config
