@@ -24,30 +24,25 @@ jobs:
       - name: Checkout reader branch
         uses: actions/checkout@v4
 
-      - name: Assemble and validate all 140 pages
+      - name: Download and validate manga archive
         env:
-          SOURCE: https://miside-manga-assets-yapparovemir-1774s-projects.vercel.app
+          DRIVE_ID: 1t-BU9gpK5OYdKJqAkvMeZicZ3e9O7g7r
         run: |
           set -euo pipefail
-          mkdir -p site/pages
-          cp manga-reader/index.html manga-reader/app.js manga-reader/styles.css manga-reader/manifest.webmanifest site/
+          URL="https://drive.usercontent.google.com/download?id=${DRIVE_ID}&export=download&confirm=t"
+          curl -fL --connect-timeout 15 --max-time 180 --retry 2 --retry-delay 2 "$URL" -o manga.zip
+          echo "Archive bytes: $(wc -c < manga.zip)"
+          file manga.zip
+          unzip -t manga.zip | tail -3
+          rm -rf site extracted
+          mkdir -p site extracted
+          unzip -q manga.zip -d extracted
+          SRC="extracted/manga-reader-vercel"
+          test -f "$SRC/index.html"
+          test -f "$SRC/pages/page-001.webp"
+          test -f "$SRC/pages/page-140.webp"
+          cp -R "$SRC"/. site/
           touch site/.nojekyll
-          CURL='curl -fsSL --connect-timeout 10 --max-time 45 --retry 2 --retry-delay 1'
-          $CURL "$SOURCE/cover.webp" -o site/cover.webp
-          echo "Cover bytes: $(wc -c < site/cover.webp)"
-          file site/cover.webp || true
-          echo 'Cover prefix:'
-          head -c 240 site/cover.webp | strings | head -8 || true
-          python - <<'PY'
-          from pathlib import Path
-          b=Path('site/cover.webp').read_bytes()
-          assert len(b)>25000, ('cover too small', len(b))
-          assert b[:4]==b'RIFF' and b[8:12]==b'WEBP', 'cover is not WebP'
-          PY
-          for n in $(seq -w 1 140); do
-            echo "Downloading page $n / 140"
-            $CURL "$SOURCE/pages/page-${n}.webp" -o "site/pages/page-${n}.webp"
-          done
           python - <<'PY'
           from pathlib import Path
           files=sorted(Path('site/pages').glob('page-*.webp'))
@@ -56,7 +51,9 @@ jobs:
               b=f.read_bytes()
               assert len(b)>25000, (f,len(b))
               assert b[:4]==b'RIFF' and b[8:12]==b'WEBP', f
-          print('Validated',len(files),'manga pages')
+          cover=Path('site/cover.webp').read_bytes()
+          assert cover[:4]==b'RIFF' and cover[8:12]==b'WEBP'
+          print('Validated',len(files),'full-quality manga pages')
           PY
 
       - name: Configure GitHub Pages
