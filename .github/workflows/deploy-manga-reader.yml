@@ -1,0 +1,64 @@
+name: Deploy manga reader to GitHub Pages
+
+on:
+  push:
+    branches: [manga-reader-pages]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: manga-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout reader branch
+        uses: actions/checkout@v4
+
+      - name: Assemble static reader
+        env:
+          SOURCE: https://miside-manga-assets-nyhsy6ej5-yapparovemir-1774s-projects.vercel.app
+        run: |
+          set -euo pipefail
+          mkdir -p site/pages
+          cp manga-reader/index.html manga-reader/app.js manga-reader/styles.css manga-reader/manifest.webmanifest site/
+          touch site/.nojekyll
+          curl -fsSL --retry 4 --retry-delay 2 "$SOURCE/cover.webp" -o site/cover.webp
+          for n in $(seq -w 1 140); do
+            echo "Downloading page $n / 140"
+            curl -fsSL --retry 4 --retry-delay 2 "$SOURCE/pages/page-${n}.webp" -o "site/pages/page-${n}.webp"
+          done
+          python - <<'PY'
+          from pathlib import Path
+          files=sorted(Path('site/pages').glob('page-*.webp'))
+          assert len(files)==140, len(files)
+          for f in files:
+              b=f.read_bytes()
+              assert len(b)>25000, (f,len(b))
+              assert b[:4]==b'RIFF' and b[8:12]==b'WEBP', f
+          assert Path('site/cover.webp').stat().st_size>25000
+          print('Validated',len(files),'manga pages')
+          PY
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
