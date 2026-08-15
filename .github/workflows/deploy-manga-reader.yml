@@ -26,7 +26,7 @@ jobs:
 
       - name: Assemble and validate all 140 pages
         env:
-          SOURCE: https://miside-manga-assets-nyhsy6ej5-yapparovemir-1774s-projects.vercel.app
+          SOURCE: https://miside-manga-assets-yapparovemir-1774s-projects.vercel.app
         run: |
           set -euo pipefail
           mkdir -p site/pages
