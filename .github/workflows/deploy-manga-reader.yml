@@ -34,6 +34,10 @@ jobs:
           touch site/.nojekyll
           CURL='curl -fsSL --connect-timeout 10 --max-time 45 --retry 2 --retry-delay 1'
           $CURL "$SOURCE/cover.webp" -o site/cover.webp
+          echo "Cover bytes: $(wc -c < site/cover.webp)"
+          file site/cover.webp || true
+          echo 'Cover prefix:'
+          head -c 240 site/cover.webp | strings | head -8 || true
           python - <<'PY'
           from pathlib import Path
           b=Path('site/cover.webp').read_bytes()
